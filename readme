@@ -1,0 +1,17 @@
+Use repl on 9p mounted remote machines on your tailscale network like this:
+
+On remote machine start 9p serving (eg. use centre):
+user@remote:/home/user$ centre -i "" -ninep-dir /src -ninep-addr `tailscale ip -4`:5650
+
+On local machine:
+# mntgen && 9 mount `namespace`/mntgen /n # optional
+# recover remote:5650
+# 9 mount `namespace`/remote:5650 /n/remote.dir
+
+Set up users on remote and local machine.
+
+To replicate local directory to remote machine:
+$ cd myworkspace
+$ repl . /n/remote.dir/
+
+Also note: 9p packets on non-trivial latency networks move like a tired, sleepy sloth.
