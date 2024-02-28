@@ -1,0 +1,82 @@
+#!/bin/bash
+set +x
+
+die() {
+	echo $1
+	exit -1
+}
+
+which cleanname > /dev/null
+if [ "$?" -ne "0" ]; then
+	die "error: cleanname missing, install plan9port"
+fi
+
+from=$1
+if [ -z $from ]; then
+	echo "$0 recursively copies frompath to topath/YYYY/MMDD/ similar to the plan9 dump file system."
+	echo "topath defaults to /src/repl/"
+	die "usage: $0 frompath [topath]"
+fi
+
+if [ ${from:0:1} != '/' ]; then
+	from=$PWD/$from
+fi
+from=`cleanname $from`
+if [ ! -d $from ]; then
+	die "$from does not exist"
+fi
+
+# $repl root for replications, default /src/repl/
+repl=/src/repl/
+if [ -n $2 ]; then
+	repl=$2
+fi
+if [ ${repl:0:1} != '/' ]; then
+	die "error: topath must start with /"
+fi
+
+# $max_repl maximum number of daily replications
+max_repl=100
+
+# Query current date for the directory structure
+yyyy=`date +%Y`
+mmdd=`date +%m%d`
+
+day=$yyyy/$mmdd
+mkdir -p $repl/$day
+if [ "$?" -ne "0" ]; then
+	die "error: mkdir -p $repl/$day"
+fi
+
+# Create $pushed_file directory, repeat until created,
+# or if tried for more than $max_pushes times.
+for ((i=0; i<=$max_repl; i++))
+do
+	try=$i
+	# mkdir(2) on posix is atomic
+	mkdir $repl/$day/$try 2> /dev/null
+	if [ "$?" -eq "0" ]; then
+		break
+	fi
+done
+
+cd $repl/$day/$try 
+if [ "$?" -ne "0" ]; then
+	die "could not walk to $repl/$day/$try"
+fi
+
+p=`basename $from`
+to=$repl/$day/$try/$p/
+to=`cleanname $to`
+mkdir -p $to
+
+echo from: $from
+echo to: $to
+
+(cd $from && tar cf - .) | (cd $to && tar xf -)
+
+# Remove write access on replicated path
+chmod -R a-w $to
+if [ "$?" -ne "0" ]; then
+	die "could not remove write access on $to"
+fi
