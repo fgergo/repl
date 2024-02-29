@@ -28,10 +28,10 @@ fi
 
 # $repl root for replications, default /src/repl/
 repl=/src/repl/
-if [ -n $2 ]; then
+if [[ -n $2 ]]; then
 	repl=$2
 fi
-if [ ${repl:0:1} != '/' ]; then
+if [[ ${repl:0:1} != '/' ]]; then
 	die "error: topath must start with /"
 fi
 
